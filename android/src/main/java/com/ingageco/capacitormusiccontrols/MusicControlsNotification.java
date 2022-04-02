@@ -34,7 +34,6 @@ public class MusicControlsNotification {
 	private NotificationCompat.Builder notificationBuilder;
 	private int notificationID;
 	private MusicControlsInfos infos;
-	private Bitmap bitmapCover;
 	private String CHANNEL_ID;
 	private MediaSessionCompat.Token token;
 
@@ -49,8 +48,7 @@ public class MusicControlsNotification {
 		this.cordovaActivity = cordovaActivity;
 		Context context = cordovaActivity.getApplicationContext();
 		this.notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-		//MediaSessionCompat mediaSession = new MediaSessionCompat(context, "session tag");
-		this.token = token; //mediaSession.getSessionToken();
+		this.token = token;
 
 		// use channelid for Oreo and higher
 		if (Build.VERSION.SDK_INT >= 26) {
@@ -74,7 +72,7 @@ public class MusicControlsNotification {
 	public void updateNotification(MusicControlsInfos newInfos){
 
 		Log.i(TAG, "updateNotification: infos: " + newInfos.toString());
-		this.getBitmapCover(newInfos.cover);
+		// this.getBitmapCover(newInfos.cover);
 		this.infos = newInfos;
 		this.createBuilder();
 		this.createNotification();
@@ -128,62 +126,6 @@ public class MusicControlsNotification {
 		this.createNotification();
 	}
 
-	// Get image from url
-	private void getBitmapCover(String coverURL){
-		try{
-			if(coverURL.matches("^(https?|ftp)://.*$"))
-				// Remote image
-				this.bitmapCover = getBitmapFromURL(coverURL);
-			else{
-				// Local image
-				this.bitmapCover = getBitmapFromLocal(coverURL);
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		}
-	}
-
-	// get Local image
-	private Bitmap getBitmapFromLocal(String localURL){
-		try {
-			Uri uri = Uri.parse(localURL);
-			File file = new File(uri.getPath());
-			FileInputStream fileStream = new FileInputStream(file);
-			BufferedInputStream buf = new BufferedInputStream(fileStream);
-			Bitmap myBitmap = BitmapFactory.decodeStream(buf);
-			buf.close();
-			return myBitmap;
-		} catch (Exception ex) {
-			try {
-				InputStream fileStream = cordovaActivity.getAssets().open("public/" + localURL);
-				BufferedInputStream buf = new BufferedInputStream(fileStream);
-				Bitmap myBitmap = BitmapFactory.decodeStream(buf);
-				buf.close();
-				return myBitmap;
-			} catch (Exception ex2) {
-				ex.printStackTrace();
-				ex2.printStackTrace();
-				return null;
-			}
-		  }
-	}
-
-	// get Remote image
-	private Bitmap getBitmapFromURL(String strURL) {
-		try {
-			URL url = new URL(strURL);
-			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-			connection.setDoInput(true);
-			connection.connect();
-			InputStream input = connection.getInputStream();
-			Bitmap myBitmap = BitmapFactory.decodeStream(input);
-			return myBitmap;
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			return null;
-		}
-	}
-
 	private void createBuilder(){
 		Context context = cordovaActivity.getApplicationContext();
 		NotificationCompat.Builder builder = new NotificationCompat.Builder(context,CHANNEL_ID);
@@ -193,11 +135,6 @@ public class MusicControlsNotification {
 			builder.setChannelId(this.CHANNEL_ID);
 		}
 
-		//Configure builder
-		builder.setContentTitle(this.infos.track);
-		if (!this.infos.artist.isEmpty()){
-			builder.setContentText(this.infos.artist);
-		}
 		builder.setWhen(0);
 
 		// set if the notification can be destroyed by swiping
@@ -236,11 +173,6 @@ public class MusicControlsNotification {
 			} else {
 				builder.setSmallIcon(this.getResourceId(this.infos.pauseIcon, android.R.drawable.ic_media_pause));
 			}
-		}
-
-		//Set LargeIcon
-		if (!this.infos.cover.isEmpty() && this.bitmapCover != null){
-			builder.setLargeIcon(this.bitmapCover);
 		}
 
 		//Open app if tapped

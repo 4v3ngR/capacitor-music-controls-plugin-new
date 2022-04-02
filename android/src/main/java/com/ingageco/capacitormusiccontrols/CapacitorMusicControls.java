@@ -54,22 +54,34 @@ public class CapacitorMusicControls extends Plugin {
 	private MusicControlsNotification notification;
 	private MediaSessionCallback mMediaSessionCallback;
 	private PendingIntent mediaButtonPendingIntent;
+	private AudioManager mAudioManager;
 
 	@PluginMethod()
 	public void create(PluginCall call) {
-		JSObject options = call.getData();
+		try {
+			JSObject options = call.getData();
+			final MusicControlsInfos infos = new MusicControlsInfos(options);
 
-		this.initialize();
-		this.updateMetadata(options);
-		call.resolve();
+			this.initialize();
+			this.notification.updateNotification(infos);
+			this.updateMediaSession(infos);
+			call.resolve();
+		} catch (JSONException e) {
+			call.reject("error in create");
+		}
 	}
 
 	@PluginMethod()
 	public void updateMetadata(PluginCall call) {
-		JSObject options = call.getData();
+		try {
+			JSObject options = call.getData();
+			final MusicControlsInfos infos = new MusicControlsInfos(options);
 
-		this.updateMetadata(options);
-		call.resolve();
+			this.updateMediaSession(infos);
+			call.resolve();
+		} catch (JSONException e) {
+			call.reject("error in update");
+		}
 	}
 
 	@PluginMethod()
@@ -80,7 +92,6 @@ public class CapacitorMusicControls extends Plugin {
 		this.destroyPlayerNotification();
 
 		try {
-
 			context.unregisterReceiver(this.mMessageReceiver);
 
 			this.mediaSessionCompat.setActive(false);
@@ -166,8 +177,10 @@ public class CapacitorMusicControls extends Plugin {
 
 		// get ready for headset events
 		try {
+			this.mAudioManager = (AudioManager)context.getSystemService(Context.AUDIO_SERVICE);
 			Intent headsetIntent = new Intent("music-controls-media-button");
 			this.mediaButtonPendingIntent = PendingIntent.getBroadcast(context, 0, headsetIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+			this.registerMediaButtonEvent();
 		} catch (Exception e) {
 			this.mediaButtonPendingIntent = null;
 		}
@@ -176,33 +189,33 @@ public class CapacitorMusicControls extends Plugin {
 		this.mediaSessionCompat = new MediaSessionCompat(context, "capacitor-music-controls-media-session", null, this.mediaButtonPendingIntent);
 		this.mediaSessionCompat.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
 
+		this.mMediaSessionCallback = new MediaSessionCallback(this);
+		this.mediaSessionCompat.setCallback(this.mMediaSessionCallback);
+
 		// create a notification
 		this.notification = new MusicControlsNotification(activity, this.notificationID, this.mediaSessionCompat.getSessionToken());
-
-		// register the headset button event receiver
-		this.registerMediaButtonEvent();
 	}
 
-	private boolean updateMetadata(JSObject options) {
+	private boolean updateMediaSession(MusicControlsInfos infos) {
 		try {
-			this.mediaSessionCompat.setActive(false);
-			this.mediaSessionCompat.setMetadata(null);
-			this.mediaSessionCompat.setPlaybackState(null);
-
-			final MusicControlsInfos infos = new MusicControlsInfos(options);
 			final MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
-
-			this.notification.updateNotification(infos);
 
 			metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_TITLE, infos.track);
 			metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, infos.artist);
 			metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, infos.album);
 			metadataBuilder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, infos.duration);
+
+			Bitmap art = getBitmapCover(infos.cover);
+			if(art != null){
+				metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, art);
+				metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ART, art);
+			}
+
 			this.mediaSessionCompat.setMetadata(metadataBuilder.build());
 
 			this.mediaSessionCompat.setActive(true);
 			return true;
-		} catch (JSONException e) {
+		} catch (Exception e) {
 			return false;
 		}
 	}
@@ -243,5 +256,61 @@ public class CapacitorMusicControls extends Plugin {
 			playbackstateBuilder.setState(state, elapsed, 0, SystemClock.elapsedRealtime());
 		}
 		this.mediaSessionCompat.setPlaybackState(playbackstateBuilder.build());
+	}
+
+	private Bitmap getBitmapCover(String coverURL){
+		try{
+			if(coverURL.matches("^(https?|ftp)://.*$"))
+				// Remote image
+				return getBitmapFromURL(coverURL);
+			else {
+				// Local image
+				return getBitmapFromLocal(coverURL);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
+	}
+
+	// get Local image
+	private Bitmap getBitmapFromLocal(String localURL) {
+		try {
+			Uri uri = Uri.parse(localURL);
+			File file = new File(uri.getPath());
+			FileInputStream fileStream = new FileInputStream(file);
+			BufferedInputStream buf = new BufferedInputStream(fileStream);
+			Bitmap myBitmap = BitmapFactory.decodeStream(buf);
+			buf.close();
+			return myBitmap;
+		} catch (Exception ex) {
+			try {
+				InputStream fileStream = getActivity().getAssets().open("public/" + localURL);
+				BufferedInputStream buf = new BufferedInputStream(fileStream);
+				Bitmap myBitmap = BitmapFactory.decodeStream(buf);
+				buf.close();
+				return myBitmap;
+			} catch (Exception ex2) {
+				ex.printStackTrace();
+				ex2.printStackTrace();
+				return null;
+			}
+		}
+	}
+
+	// get Remote image
+	private Bitmap getBitmapFromURL(String strURL) {
+		try {
+			URL url = new URL(strURL);
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+			connection.setDoInput(true);
+			connection.connect();
+			InputStream input = connection.getInputStream();
+			Bitmap myBitmap = BitmapFactory.decodeStream(input);
+			return myBitmap;
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			return null;
+		}
 	}
 }

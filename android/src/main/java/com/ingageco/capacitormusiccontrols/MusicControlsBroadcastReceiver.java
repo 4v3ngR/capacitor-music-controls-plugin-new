@@ -61,6 +61,7 @@ public class MusicControlsBroadcastReceiver extends BroadcastReceiver {
 						ret.put("message", "music-controls-headset-plugged");
 
 						this.musicControls.registerMediaButtonEvent();
+						this.musicControls.controlsNotification(ret);
 						break;
 					default:
 						break;
