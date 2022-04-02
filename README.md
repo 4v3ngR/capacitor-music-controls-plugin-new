@@ -102,9 +102,10 @@ CapacitorMusicControls.create({
 	hasNext   : false,		// show next button, optional, default: true
 	hasClose  : true,		// show close button, optional, default: false
 
+	duration : 60, // optional, default: 0 // for android, this is in ms
+	elapsed : 10, // optional, default: 0 // for android, this is in ms
+
 	// iOS only, optional
-	duration : 60, // optional, default: 0
-	elapsed : 10, // optional, default: 0
   	hasSkipForward : true, //optional, default: false. true value overrides hasNext.
   	hasSkipBackward : true, //optional, default: false. true value overrides hasPrev.
   	skipForwardInterval : 15, //optional. default: 15.
@@ -124,7 +125,7 @@ CapacitorMusicControls.create({
 	nextIcon: 'media_next',
 	closeIcon: 'media_close',
 	notificationIcon: 'notification',
-	iconsColor: 0xffffffff // controller icons color, default: white (url for more colors: https://developer.android.com/reference/android/graphics/Color#constants_1 ) 
+	iconsColor: 0xffffffff // controller icons color, default: white (url for more colors: https://developer.android.com/reference/android/graphics/Color#constants_1 ) - set it to -1 to use the default
 
 }).then(()=>{
 	// TODO
@@ -134,12 +135,18 @@ CapacitorMusicControls.create({
 });
 ```
 
+- Update the media controls metadata
+```javascript
+CapacitorMusicControls.updateMetadata(...);
+```
+Note: the argument for the updateMetadata is the same as the create argument
+
 - Update whether the music is playing true/false, as well as the time elapsed (seconds)
 
 ```javascript
-CapacitorMusicControls.updateIsPlaying({
+CapacitorMusicControls.updateState({
     isPlaying: true, // affects Android only
-    elapsed: timeElapsed // affects iOS Only
+    elapsed: timeElapsed // both android and ios
 }).then(()=>{
 	// TODO
 })
@@ -157,7 +164,6 @@ CapacitorMusicControls.addListener('controlsNotification', (info: any) => {
     handleControlsEvent(info);
 });
 ```
-
 
 
 - Example event handler
