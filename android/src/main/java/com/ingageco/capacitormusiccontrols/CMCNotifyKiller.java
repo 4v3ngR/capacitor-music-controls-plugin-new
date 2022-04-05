@@ -83,6 +83,7 @@ public class CMCNotifyKiller extends Service {
 	* by the OS.
 	*/
 	private void keepAwake(boolean do_wakelock) {
+		/*
 		if (notification != null && notification.get() != null && !foregroundStarted) {
 			Log.i(TAG, "Starting ForegroundService");
 			startForeground(this.NOTIFICATION_ID, notification.get());
@@ -103,6 +104,7 @@ public class CMCNotifyKiller extends Service {
 				Log.e(TAG, "wakeLock not acquired yet");
 			}
 		}
+		*/
 	}
 
 	/**
