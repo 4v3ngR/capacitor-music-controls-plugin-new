@@ -103,6 +103,11 @@ public class MusicControlsNotification {
 		this.infos.isPlaying=isPlaying;
 		this.createBuilder();
 		this.createNotification();
+
+		// if we're paused, we can sleep
+		if (!isPlaying && this.killer_service != null) {
+			this.killer_service.get().setNotification(null);
+		}
 	}
 
 	// Toggle the dismissable status
