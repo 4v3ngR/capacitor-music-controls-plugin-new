@@ -103,11 +103,6 @@ public class MusicControlsNotification {
 		this.infos.isPlaying=isPlaying;
 		this.createBuilder();
 		this.createNotification();
-
-		// if we're paused, we can sleep
-		if (!isPlaying && this.killer_service != null) {
-			this.killer_service.get().setNotification(null);
-		}
 	}
 
 	// Toggle the dismissable status
@@ -118,11 +113,6 @@ public class MusicControlsNotification {
 		this.infos.dismissable=dismissable;
 		this.createBuilder();
 		this.createNotification();
-
-		// if we're paused, we can sleep
-		if (!this.infos.isPlaying && this.killer_service != null) {
-			this.killer_service.get().setNotification(null);
-		}
 	}
 
 	// Toggle the dismissable and play/pause status
@@ -134,11 +124,6 @@ public class MusicControlsNotification {
 		this.infos.dismissable=dismissable;
 		this.createBuilder();
 		this.createNotification();
-
-		// if we're paused, we can sleep
-		if (!isPlaying && this.killer_service != null) {
-			this.killer_service.get().setNotification(null);
-		}
 	}
 
 	private void createBuilder(){
